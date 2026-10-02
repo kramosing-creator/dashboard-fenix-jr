@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Fénix Jr.</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f4f6f8;
+      color: #17202a;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #dfe3e8;
+      padding: 18px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 { margin: 0; font-size: 24px; }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo {
+      width: 82px;
+      height: 82px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    header .sub { margin-top: 5px; color: #68737d; font-size: 13px; }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-primary { background: #168a4a; color: white; }
+    .btn-secondary { background: #e9edf1; color: #17202a; }
+
+    main {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      color: #68737d;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #168a4a;
+    }
+
+    .dot.error { background: #c62828; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e1e5e9;
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .card .label { color: #68737d; font-size: 13px; }
+    .card .value { font-size: 30px; font-weight: 700; margin-top: 7px; }
+
+    .green { color: #168a4a; }
+    .orange { color: #c87900; }
+    .red { color: #c62828; }
+
+    .documents-section {
+      margin-top: 28px;
+    }
+
+    .documents {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .document-card {
+      background: #fff;
+      border: 1px solid #dfe4e8;
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .document-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .document-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .document-stat {
+      border-radius: 9px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+
+    .document-stat .number {
+      display: block;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .document-stat .text {
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .document-valid {
+      background: #dff5e8;
+      color: #168a4a;
+    }
+
+    .document-warning {
+      background: #fff0d9;
+      color: #a86200;
+    }
+
+    .document-expired {
+      background: #fde1e1;
+      color: #b21f1f;
+    }
+
+    .error-box {
+      display: none;
+      background: #fde1e1;
+      color: #8e1b1b;
+      border: 1px solid #f3b5b5;
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 18px;
+    }
+
+    .section-title {
+      margin: 0 0 14px 0;
+      font-size: 20px;
+    }
+
+    .types {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .type-card {
+      background: #fff;
+      border: 1px solid #dfe4e8;
+      border-radius: 14px;
+      padding: 20px;
+      cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+
+    .type-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,.08);
+    }
+
+    .type-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      min-height: 22px;
+    }
+
+    .type-total {
+      font-size: 34px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .type-status {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .mini {
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mini.green { background: #dff5e8; }
+    .mini.orange { background: #fff0d9; }
+    .mini.red { background: #fde1e1; }
+
+    .empty {
+      background: #fff;
+      border: 1px solid #e1e5e9;
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      color: #68737d;
+    }
+
+    dialog {
+      width: min(1200px, 94vw);
+      max-height: 90vh;
+      border: 0;
+      border-radius: 14px;
+      padding: 0;
+      box-shadow: 0 15px 60px rgba(0,0,0,.25);
+    }
+
+    dialog::backdrop { background: rgba(0,0,0,.45); }
+
+    .modal-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid #e1e5e9;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .modal-body {
+      padding: 20px 22px;
+      overflow: auto;
+      max-height: 76vh;
+    }
+
+    .modal-tools {
+      margin-bottom: 16px;
+    }
+
+    .modal-tools input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #cfd6dc;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .mobile-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .mobile-card {
+      border: 1px solid #e1e5e9;
+      border-radius: 10px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .mobile-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .mobile-title {
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge.aprobado { background: #dff5e8; color: #168a4a; }
+    .badge.no-cumple { background: #fff0d9; color: #a86200; }
+    .badge.retirado { background: #fde1e1; color: #b21f1f; }
+    .badge.neutral { background: #edf1f4; color: #56616b; }
+
+    .mobile-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .field {
+      background: #f8fafb;
+      border-radius: 7px;
+      padding: 9px;
+      min-width: 0;
+    }
+
+    .field .k {
+      font-size: 10px;
+      color: #68737d;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .field .v {
+      font-size: 12px;
+      word-break: break-word;
+    }
+
+    .detail-button {
+      margin-top: 12px;
+      background: #e9edf1;
+      color: #17202a;
+    }
+
+    .full-detail {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 1000px) {
+      .types { grid-template-columns: repeat(2, 1fr); }
+      .mobile-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 700px) {
+      header { padding: 14px 16px; }
+      main { padding: 14px; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .types { grid-template-columns: 1fr; }
+      .documents { grid-template-columns: 1fr; }
+      .mobile-grid, .full-detail { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="brand">
+      <img class="logo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBw4QEg8QDw8SFRAVEBAQDxgVFxYQEBoQFRcXFhcXGRgdHSghGB4lHRcVJDEiJiorLi4uGB8/RD8tNzQ5Li0BCgoKDg0OGhAQGy8iIB8tMCstKzctNy0uKy03LTc3Li0tNzcvLS0tLS0tNy0tLS4vLSstLS0rLS0tLSstLSsrK//AABEIAMgAyAMBIgACEQEDEQH/xAAcAAEAAwEBAQEBAAAAAAAAAAAABQYHBAMBAgj/xABKEAABAwIDBAYFBwgHCQAAAAABAAIDBBEFEiEGEzFBByJRcYGRFDJhobEjQkNigpLBJDNSU3SistEVFjQ1ctLhJVRjc4STs8Lw/8QAGQEBAAMBAQAAAAAAAAAAAAAAAAECAwQF/8QALREBAQABAgMHBAEFAQAAAAAAAAECAxEEEjEFITJBUYGhE0JhsZFSU3HR8CL/2gAMAwEAAhEDEQA/ANxREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQEREBERAREQfERVfaDbqgo7tL97KNMkfWIP1ncG/H2KZFc88cJvldloC56uuhhGaaVkbe17gweZWbf07j2Jf2OHcQHg/1eqf+I4a/YC9IejuO+8xKufJIdXBp1+867neQVpg5rxNvgx973RP4h0jYXFcNldKRyjaT73WB81Cv6T5JCW0mHSSdhJJP3WtPxUpSYZhNP+Zomud+lIM577vuQu841IBZjGNHKwutcdHK+TDLXy885P8AE3Vn+su0kv5vDwwcs0bmn99w+C+CXa12uRrR/wBP/NWF2Kzn6Q+AAUjg9U6UPje45rXB+dbh/wDd6nLSuM3uyuGczy25sv0r1FV7TMtvKankHO7msd4FrrDyVrwusqJB+UUphd/zGSsPcQb+5R5wipPGQeLnfyQYRUjhIPvO/kq3DC/dG2GWpj5W+6wIueibIGgSEFw0uNbhdCws2dsu83fURESIiICIiAiIgIiICIiD4ozHcdpqKPeVD8o1ytGr3HsaOa/GN4q+K0VPGZap4+TYNGgcM8jvmMHv4D2V6DZyKOT0rE5BU1Z1a36FnYGs7BrqfK6tjjuw1dWzun8+URMtVjGM6QtNLQn5xJa5ze/i/noLN7SVI4VsxhdDY5PSJx859i0O9jeDfeVI1eIyS9UaN5Nb/pxSDCp3/MsPrdVdU0pPHdnBc7b/AOZzX1/0+1OKyv0Byjsbp71wlSdRQU8AzVVTHG36zmxjzcVCVu3Oz9Pe0pmcOUbXSe82b71pNXDHwwvD6uffnXQF7MpJTwjd5FVSs6ZqdlxS4e49he9sX7rQ74qCrOmPE3XEcVPGOXVc93mXW9yfUzvSLThMJ1yae3Cqg/R+ZAXZh2GTMka4gAA668lhdT0k41JxrC0fUZGz4Nuoyba3FH+tiFV4SyNHkCov1Mptdl8dHTxss3XvpnfW0lXHLDV1DIp47hrZZGtEkdmusAdBYsPeSqHHtZijeGIVf/ekP4qNq62aYh00skhAsC9znnt5rwTHCSbVtct7vFqwnpBxWCWKR1XLKxrgXse7M1zebdeGl9V/ReE4hFUwxVELrxyMD2H2Hkewg3Hgv5KWu9A+NSl1RROuYgz0iM/ouzNa5vjmB8D2rLW05tvF9PPv2rZERFyugREQEREBERAREQEX4kka0EuIAHEk2CgMQx+oN20VBNO79J9qWnH2pLF32QR7U2EhM9xLhTsGZxu950F+HH5xUBi2IYbR3dXVrN5xLAc0n3Rd3wUHi+F45VaVuK09HEfo4M2a3YT1SfvWURS7BYIw3kqKqpfzDBkafdf95Xuvp6fdcpP2znC56t3mNv6euJ9MFNFdtBRFx4B8pyDvyi5d5hU3FOkbGao5RUOjB4NgG78nDr+9aRRYDh8dvR8DzdhnzSa/bzBTEDcSaLQUcELfqhjfx/BY3jtKeHG5ezox4HUvXKY+8YXFs5i1Sc4pKqQni5zJDf7TuKlaXowxp/GmDB2vkjHuzXWvyUGMv9aYDuIb/CFzv2Xr3+vUA973u/BUvaWr9ulffua49naX36s9u9ncXRDX8ZqqkjHte5zv4be9dUfRVTj87i8IPMNYH+/eBXcbEz85We9fr+pE365nkVhlx/G3pp/LfHgeCnXV+FQj6N8Hb+cxOV3+BrR+Dl0M2F2cbxqqt3fYfCJWY7ETfrmeRXm7Yqp5SR+bh+Cxy4zj/wChtOD7O/uX/vZCM2S2ZHH0h3e54+AC9m7M7Lj6CU975v8AMpB2x1YP1Z7nH8QvB+y1aPor9zm/zWOXHcfPt+G+PA9nXpn8vJuzey3+7v8Av1P+ZT+z8uCULXNpAI8xBebSucSOF3OuTz09pVblwSrbxgk8Bm+C5JaeRnrMc3vBCyy7U4ueLH4rXHsng8vDn8xpbNoKM/Ts8dPiu+nnZIA5jg5p4EG4WQKxbHYxuZN08/JvOnYH8j48PJacP2pc85jnJN2XFdkTDTuenbdvJoaIi9p4QiIgIiIC8nyHk0n3Beq+KByuZO75zGD2AyO8CbD3LxdhQd+dllf9rdjyZlupBfVW4S9VpnZ0cEOD0rNWwsv2kAnzKVmJUlPYTTwxX9USPZHfuudV3LM9jMFpcQnxapromzTCulpw2TrBkTNGgDlzF/qq2GnjPJXLPK9WkMlYWh7XNLLZg4EFuXje/Cy5qLFqSZxbDUwyOHrBkjHuHeAdFme02H01LTU9BS1bnUk+Lxw1IEjX7prtXQ3HqjS9jroV19I+BUeH08FZQwsgqYaiERGPql1zYsd+ncduuhWkwn8qc1aSyoY5zmNe0vbbO0EFwvwuOIXn6dBle/ex5WEtkOZuVpHEON+r4rIhPPS4piuIx3dFT1MMdYwak00wIc7vYWNNl40uHvrqXEBTSRO/27JOxkj8kc7QLiO9xe92nwU/T/KOdsNDidNPcwTxS29bdvbJbvynRfipxikieI5amFkhtZr5GMfr7CbrOMJrIIK0bzC30FcaWdsLYy00c2RheQQ0AX05ey54Lq6PtlqCsw9tRVwtmnqHTunkf1pM2d7dHcWGwHCyXCTvTMmiVNXFEA6WRjGk2Be4MBPeV8pq2GW+6lY+3HI5r7eRWFekvkpMIZLG6pZFiVRBGzi6WFu7s0X48SPBTOGOEeJPkp6J1A+LDaiXcuveY2dlIA6tgbfd8p+mjnatUYzRxvEUlVAyTSzHSMa/7pN11OnYHNYXtDnXyAkBxtxsOdlm2w2yWG1WGNnqo2ySziZ88zjeUOzuBIefVtb3aqH2jeKSegNJUmYQ4VX7iXM2Q9VkoBzN0OW1vsqOSW7J5u7dq78YoxJuXVMAmvbIZGCS/wDhvddth2LNsG2OwyTCGyyQsdLJSGokmOsolLc5dn49U8uGisfRpWyz4ZRyTEl+R7CTxIY9zGk9ujRqq5YzZMyqcnwynk9eGM97RfzUbUbKUbuDC0/VcR7jcKdRYZaGnl1xjfDX1cPDlZ7vzEzKALnQAa6nRftEWjIREUgiIgIiICIiD4qFtDs/hramSYYq+hqJrb9sdQyDefWLSb39vtV9WS1+DzxVOJTHDqfEqeaZznOa9hqouPyYBuQW34NF9Ar4dVMluj2RwptIMNJBZKXTNLnj0h8g1MrTzcBbUC1vYuGHZKhjmY+sxKaoNPlkjjqZ2lkfANe5vfbU+xVzZqqppMQwI0u83Io6tjBKc0jS3fXaTzty9llE9KP9sxX9lov/ACRK8xu+26ts23adguG4fvq+SGoZMavK6oZnjkYGtDm2AbqAQ43vdV+DZXAWU0lIK9uR1QKljvSIhLHKAGgscLW0HO/FQU2GOmqKeWjwiahZDFUvqXvaIQ5hjIDbfO5j7S/XRxgu/p6Te4LSyQO3mepe9hkID367vLc2Iy+CbbTfc3/C04bg2H01S2epxV1RUxB0cXpE8fyebR1m3FnW01XlUbD0QeY4MRqKeKoJeYIpmtjeCOtkaRwI7L6exUugbHnxlz8GNYBXVZMl2jIASS3tHbp2rqjonRYNhWIRv3j6Op3+l9IXy5ZI9ddCG37nKbjZ5m89F7qNmMNYcPiEgi9DcaiBgexpdbrOc8OBLhoST3r94nDhjaunxGetjjeKcwxB0sTYXxOLjfX1vWOoNlTq0itftDiAOaKKjkoaY8RpGXSEeP8AGo3BcHqG7mrjoqXEY30FGx8L3s30OWNo0a64F7E8Oajl9ac34W2To/oskjocQqYaGTNJJHHM0UpaeNjawafFd2HYJhE81NJSzxyClp30zYopI5Y908FpzjUn1jzVDE9JUMwughZPDSPxOZlZDK43bK3dkQ345SXHTje/NWLbrCKWgkwupoYmQ1Hp0UFogI88T75g4D1uAF/rJtem5vPR+pNkcLbnp24xNHTF7s9MKmMR3vqyx1Avy4rQKCljhjjihaGxMY1sYHAMA071heFCMUeIOfg3pNpqv8o6oyAD7wy+tp2rWejuLJhtC3e7z5EEOF7WcS7Lrr1b5fsqNSbJxvesiIiyaCIiAiIgIiICIiAiIgKoV+wcL5pp4KurpnTHNUNgk3bHu5uItodTr7Vb0Uy7IslVGp6PqF0NLFE6aF1NmMEsT8s4L9XXdbW5/wBLLnf0c0JgqWTT1L3zGN9RPJI0zkRm4GYtsG+HwV1UJtv/AHfiH7HUfwOUzK3zRcY9ZsWoJGOi9Mgs9pj0ljzWcC3TXiqszo9o6cRxNxXEImuOWJgqWRgk6kMbkF9TwHas8w52zn9Fnf8A95bma2Xf597mfuvqcMikKTf5tk9/mz55LZvW3e+bu/3cvhZa8lnSqc27WMI2cgpRViN0hFTNJPLnLTZ0nENsBYd91x4Dg2Hiifh1PUCaAMkY/wCUjkkAmLiblosNS62nJTGO/wBmqf2eb+ArHeiCX0WpgLnWirKSc68N7BI/4MafvKklstWtksjRMOwPDIKaTCI6kfKCVjwZI/SiZBrpbiAR83gAoiXZnCWOYYMVfTTMhZTyOiqYo3vZGMo3g5nQDlwVG2WLpcXoa11/yqprZmX/AFYztH/sPBcOxkuEinf6dhtVUy71xD4g4sDMrbNJEjbG+Y8PnLTks81OaejXYdhsNfSejAvkY6U1G+z5pzOfpRINL+Fl+sL2GgimjqZ6mqqpY77j0iTeNYTzaLcfaoDoOH5NVFsgyGpJjjzZnxi1ut2X08lpayytls3Xxks3QGFbK09PTVNIx0hindM6QuLS+8zcrspDQBpw0XdgOFR0cEVNE57mRtLWl5Bfa5OtgBz7FIoq2rbQREUJEREBERAREQEREBERAREQfFFbVUkk9HWQxNzSSU00cYuBd7mEAXOg1UsiQU7YPZZlPQ00dXSQipbvN5mbHI+5keW9cXvoW81G9I2C4jNVYbVUFOJTTl7yHPYxubMwtBzOF+HJaEitM7vuryzbZQ6Wt2inL4arDoI4Xwztc5kjHODjG4MA+UPF2UcOarNTsPif9GUEcUNq6CapBaHxgiGfMHHNmy8Mml+a2JFMzs6I5N+rNqXY+qhqsCcyIGKlpnMqXZmWbK5ri7S9z1nHh2qK2Oo9pcMgdTxYZE9rpXS3fNFe7mtbbSTh1R5rXkT6l8zkik9G+zNXRmtqKwsE9VKJHsYbtZYvd3XJedBfgFd0XxVt3u60mz6iIoSIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIgIiICIiAiIg//9k=" alt="Consorcio Supervisor PLMB">
+      <div>
+        <h1>Dashboard Fénix Jr.</h1>
+        <div class="sub">Información de la tabla EQUIPOS</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="cargarDatos()">Actualizar</button>
+  </header>
+
+  <main>
+    <div class="status-bar">
+      <span id="statusDot" class="dot"></span>
+      <span id="statusText">Conectando...</span>
+    </div>
+
+    <div id="errorBox" class="error-box"></div>
+
+    <section class="cards">
+      <div class="card">
+        <div class="label">Total de móviles</div>
+        <div id="total" class="value">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Equipos verificados</div>
+        <div id="aprobados" class="value green">0</div>
+      </div>
+      <div class="card">
+        <div class="label">No cumple</div>
+        <div id="noCumple" class="value orange">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Retirados</div>
+        <div id="retirados" class="value red">0</div>
+      </div>
+    </section>
+
+    <h2 class="section-title">Móviles por tipo</h2>
+    <section id="types" class="types">
+      <div class="empty">Cargando tipos de móvil...</div>
+    </section>
+
+    <section class="documents-section">
+      <h2 class="section-title">Documentos</h2>
+      <div id="documents" class="documents">
+        <div class="empty">Cargando documentos...</div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="tipoDialog">
+    <div class="modal-head">
+      <strong id="tipoTitulo">Móviles</strong>
+      <button class="btn-secondary" onclick="document.getElementById('tipoDialog').close()">Cerrar</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-tools">
+        <input id="buscarTipo" type="text"
+          placeholder="Buscar dentro de este tipo por móvil, placa, contratista, marca..."
+          oninput="renderMóvilesTipo()">
+      </div>
+
+      <div id="mobileList" class="mobile-list"></div>
+    </div>
+  </dialog>
+
+  <dialog id="detalleDialog">
+    <div class="modal-head">
+      <strong id="detalleTitulo">Información completa</strong>
+      <button class="btn-secondary" onclick="document.getElementById('detalleDialog').close()">Cerrar</button>
+    </div>
+
+    <div class="modal-body">
+      <div id="detalleContenido" class="full-detail"></div>
+    </div>
+  </dialog>
+
+  <script>
+    const SUPABASE_URL = 'https://qcxgekbfqwdizxpipapa.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_J9DNsg4v71-NDTjix_xVbw_CNW-6e3B';
+
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    let datos = [];
+    let tipoSeleccionado = '';
+
+    function normalizar(texto) {
+      return String(texto ?? '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+    }
+
+    function valor(obj, ...nombres) {
+      for (const nombre of nombres) {
+        const clave = Object.keys(obj).find(
+          k => normalizar(k) === normalizar(nombre)
+        );
+
+        if (
+          clave !== undefined &&
+          obj[clave] !== null &&
+          obj[clave] !== ''
+        ) {
+          return obj[clave];
+        }
+      }
+      return '';
+    }
+
+    function escapar(texto) {
+      return String(texto ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function clasificarEstatus(estatus) {
+      const e = normalizar(estatus)
+        .replace(/_/g, ' ')
+        .replace(/-/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (
+        e === 'aprobado' ||
+        e === 'verificado' ||
+        e === 'cumple' ||
+        e === 'equipo verificado' ||
+        e.includes('aprobado')
+      ) {
+        return 'verificado';
+      }
+
+      if (
+        e === 'no cumple' ||
+        e === 'no cumple ' ||
+        e.includes('no cumple')
+      ) {
+        return 'no-cumple';
+      }
+
+      if (e === 'retirado' || e.includes('retirado')) {
+        return 'retirado';
+      }
+
+      return 'neutral';
+    }
+
+    function claseEstatus(estatus) {
+      const estado = clasificarEstatus(estatus);
+
+      if (estado === 'verificado') return 'aprobado';
+      if (estado === 'no-cumple') return 'no-cumple';
+      if (estado === 'retirado') return 'retirado';
+
+      return 'neutral';
+    }
+
+    function cargarResumen() {
+      const estados = datos.map(x =>
+        clasificarEstatus(valor(x, 'estatus'))
+      );
+
+      document.getElementById('total').textContent = datos.length;
+
+      document.getElementById('aprobados').textContent =
+        estados.filter(x => x === 'verificado').length;
+
+      document.getElementById('noCumple').textContent =
+        estados.filter(x => x === 'no-cumple').length;
+
+      document.getElementById('retirados').textContent =
+        estados.filter(x => x === 'retirado').length;
+    }
+
+
+    function estadoDocumento(valorFecha) {
+      if (!valorFecha) return 'sin-dato';
+
+      const texto = String(valorFecha).trim();
+      const fecha = new Date(texto + 'T00:00:00');
+
+      if (isNaN(fecha.getTime())) return 'sin-dato';
+
+      const hoy = new Date();
+      const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+
+      if (fecha < inicioMes) return 'vencido';
+      if (fecha <= finMes) return 'por-vencer';
+
+      return 'vigente';
+    }
+
+    function cargarDocumentos() {
+      const documentos = [
+        { nombre: 'SOAT', campo: 'soat', soloMaquina: false },
+        { nombre: 'RTM', campo: 'rtm', soloMaquina: false },
+        { nombre: 'PÓLIZA - MÁQUINAS', campo: 'fecha_poliza', soloMaquina: true },
+        { nombre: 'CERTIFICADO ONAC - MÁQUINAS', campo: 'fecha_de_emision_onac', soloMaquina: true }
+      ];
+
+      const contenedor = document.getElementById('documents');
+
+      contenedor.innerHTML = documentos.map(doc => {
+        let vigente = 0;
+        let porVencer = 0;
+        let vencido = 0;
+        let sinDato = 0;
+
+        datos.forEach(row => {
+          const estadoMovil = clasificarEstatus(valor(row, 'estatus'));
+
+          // Los documentos se cuentan únicamente para verificados y no cumple.
+          if (
+            estadoMovil !== 'verificado' &&
+            estadoMovil !== 'no-cumple'
+          ) {
+            return;
+          }
+
+          // Póliza y ONAC se cuentan únicamente para máquinas.
+          if (doc.soloMaquina) {
+            const tipo = normalizar(valor(row, 'tipo_1', 'tipo 1'));
+
+            if (
+              tipo !== 'maquina' &&
+              tipo !== 'maquinas'
+            ) {
+              return;
+            }
+          }
+
+          const fecha = valor(row, doc.campo);
+
+          if (!fecha) {
+            sinDato++;
+            return;
+          }
+
+          const estado = estadoDocumento(fecha);
+
+          if (estado === 'vigente') vigente++;
+          else if (estado === 'por-vencer') porVencer++;
+          else if (estado === 'vencido') vencido++;
+          else sinDato++;
+        });
+
+        return `
+          <div class="document-card">
+            <div class="document-name">${doc.nombre}</div>
+
+            <div class="document-stats">
+              <div class="document-stat document-valid">
+                <span class="number">${vigente}</span>
+                <span class="text">VIGENTE</span>
+              </div>
+
+              <div class="document-stat document-warning">
+                <span class="number">${porVencer}</span>
+                <span class="text">POR VENCER</span>
+              </div>
+
+              <div class="document-stat document-expired">
+                <span class="number">${vencido}</span>
+                <span class="text">VENCIDO</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function cargarTipos() {
+      const agrupados = {};
+
+      datos.forEach(row => {
+        const tipo = String(
+          valor(row, 'tipo_1', 'tipo 1') || 'SIN TIPO'
+        ).trim();
+
+        if (!agrupados[tipo]) {
+          agrupados[tipo] = {
+            total: 0,
+            aprobado: 0,
+            noCumple: 0,
+            retirado: 0
+          };
+        }
+
+        agrupados[tipo].total++;
+
+        const estado = clasificarEstatus(valor(row, 'estatus'));
+
+        if (estado === 'verificado') agrupados[tipo].aprobado++;
+        if (estado === 'no-cumple') agrupados[tipo].noCumple++;
+        if (estado === 'retirado') agrupados[tipo].retirado++;
+      });
+
+      const tipos = Object.keys(agrupados).sort((a, b) =>
+        a.localeCompare(b, 'es')
+      );
+
+      const contenedor = document.getElementById('types');
+
+      if (!tipos.length) {
+        contenedor.innerHTML =
+          '<div class="empty">No hay tipos de móvil registrados.</div>';
+        return;
+      }
+
+      contenedor.innerHTML = tipos.map(tipo => {
+        const item = agrupados[tipo];
+
+        return `
+          <div class="type-card" onclick="abrirTipo(${JSON.stringify(tipo)})">
+            <div class="type-name">${escapar(tipo)}</div>
+            <div class="type-total">${item.total}</div>
+
+            <div class="type-status">
+              <span class="mini green">Aprobado: ${item.aprobado}</span>
+              <span class="mini orange">No cumple: ${item.noCumple}</span>
+              <span class="mini red">Retirado: ${item.retirado}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function abrirTipo(tipo) {
+      tipoSeleccionado = tipo;
+
+      document.getElementById('tipoTitulo').textContent =
+        'Móviles - ' + tipo;
+
+      document.getElementById('buscarTipo').value = '';
+
+      renderMóvilesTipo();
+
+      document.getElementById('tipoDialog').showModal();
+    }
+
+    function renderMóvilesTipo() {
+      const termino = normalizar(
+        document.getElementById('buscarTipo').value
+      );
+
+      const filtrados = datos.filter(row => {
+        const tipo = String(
+          valor(row, 'tipo_1', 'tipo 1') || 'SIN TIPO'
+        ).trim();
+
+        if (tipo !== tipoSeleccionado) return false;
+
+        if (!termino) return true;
+
+        return normalizar(Object.values(row).join(' ')).includes(termino);
+      });
+
+      const contenedor = document.getElementById('mobileList');
+
+      if (!filtrados.length) {
+        contenedor.innerHTML =
+          '<div class="empty">No hay móviles para esta búsqueda.</div>';
+        return;
+      }
+
+      contenedor.innerHTML = filtrados.map(row => {
+        const movil = valor(row, 'movil', 'movil_completo');
+        const placa = valor(row, 'placa');
+        const marca = valor(row, 'marca');
+        const referencia = valor(row, 'referencia');
+        const ubicacion = valor(row, 'ubicacion');
+        const contratista = valor(row, 'contratista');
+        const estatus = valor(row, 'estatus');
+        const indice = datos.indexOf(row);
+
+        return `
+          <div class="mobile-card">
+            <div class="mobile-head">
+              <div class="mobile-title">
+                Móvil ${escapar(movil)}
+              </div>
+
+              <span class="badge ${claseEstatus(estatus)}">
+                ${escapar(estatus || 'SIN ESTATUS')}
+              </span>
+            </div>
+
+            <div class="mobile-grid">
+              <div class="field">
+                <div class="k">PLACA</div>
+                <div class="v">${escapar(placa)}</div>
+              </div>
+
+              <div class="field">
+                <div class="k">MARCA</div>
+                <div class="v">${escapar(marca)}</div>
+              </div>
+
+              <div class="field">
+                <div class="k">REFERENCIA</div>
+                <div class="v">${escapar(referencia)}</div>
+              </div>
+
+              <div class="field">
+                <div class="k">UBICACIÓN</div>
+                <div class="v">${escapar(ubicacion)}</div>
+              </div>
+
+              <div class="field">
+                <div class="k">CONTRATISTA</div>
+                <div class="v">${escapar(contratista)}</div>
+              </div>
+
+              <div class="field">
+                <div class="k">TIPO 2</div>
+                <div class="v">${escapar(valor(row, 'tipo_2', 'tipo 2'))}</div>
+              </div>
+
+              <div class="field">
+                <div class="k">AÑO</div>
+                <div class="v">${escapar(valor(row, 'ano', 'año'))}</div>
+              </div>
+
+              <div class="field">
+                <div class="k">OPERADOR</div>
+                <div class="v">${escapar(valor(row, 'operador'))}</div>
+              </div>
+            </div>
+
+            <button class="detail-button"
+              onclick="verDetalle(${indice})">
+              Ver información completa
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function verDetalle(indice) {
+      const row = datos[indice];
+
+      if (!row) return;
+
+      const movil = valor(row, 'movil', 'movil_completo');
+
+      document.getElementById('detalleTitulo').textContent =
+        'Información completa - Móvil ' + movil;
+
+      const entradas = Object.entries(row).filter(([_, value]) =>
+        value !== null && value !== ''
+      );
+
+      document.getElementById('detalleContenido').innerHTML =
+        entradas.map(([key, value]) => `
+          <div class="field">
+            <div class="k">
+              ${escapar(key.replace(/_/g, ' ').toUpperCase())}
+            </div>
+            <div class="v">
+              ${escapar(value)}
+            </div>
+          </div>
+        `).join('');
+
+      document.getElementById('detalleDialog').showModal();
+    }
+
+    async function cargarDatos() {
+      document.getElementById('statusText').textContent =
+        'Actualizando información...';
+
+      document.getElementById('statusDot').className = 'dot';
+      document.getElementById('errorBox').style.display = 'none';
+
+      try {
+        let todos = [];
+        let desde = 0;
+        const cantidad = 1000;
+
+        while (true) {
+          const { data, error } = await supabaseClient
+            .from('equipos')
+            .select('*')
+            .range(desde, desde + cantidad - 1);
+
+          if (error) throw error;
+
+          todos = todos.concat(data || []);
+
+          if (!data || data.length < cantidad) break;
+
+          desde += cantidad;
+        }
+
+        datos = todos;
+
+        cargarResumen();
+        cargarDocumentos();
+        cargarTipos();
+
+        document.getElementById('statusText').textContent =
+          `Conectado. ${datos.length} registros cargados.`;
+
+      } catch (error) {
+        console.error(error);
+
+        document.getElementById('errorBox').style.display = 'block';
+        document.getElementById('errorBox').textContent =
+          'No fue posible consultar la tabla equipos: ' +
+          (error.message || error);
+
+        document.getElementById('statusText').textContent =
+          'Error de conexión';
+
+        document.getElementById('statusDot').className =
+          'dot error';
+      }
+    }
+
+    cargarDatos();
+  </script>
+</body>
+</html>
